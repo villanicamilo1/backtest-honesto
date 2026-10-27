@@ -38,9 +38,7 @@ Un SÍ es débil: no encontrar errores no dice que la estrategia vaya a ganar.
 
 ## Revisión hecha por una persona
 
-Si prefieres que alguien revise tu estrategia y te entregue el informe de una
-página con el semáforo, escribe aquí: **[ENLACE DE CONTACTO]**
-
+escribe aquí: **[Pedir una revisión](https://docs.google.com/forms/d/e/1FAIpQLSd7EJB-5X7tGj8Kt_zmHnQfcAK6baNQj0zmCLptHY3NF7km1A/viewform?usp=header)**
 ## Aviso
 
 Revisión técnica de datos pasados. No es asesoría de inversión ni garantía de
