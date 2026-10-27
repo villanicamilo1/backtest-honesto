@@ -5,10 +5,8 @@
 Esto no es una estrategia de trading ni promete ganancias. Es lo contrario:
 una forma ordenada de encontrar los errores que hacen que una estrategia se vea
 mejor de lo que es.
-
-Nace de más de 95 experimentos preinscritos sobre cripto, acciones y materias
-primas. Ninguna estrategia pasó todos los controles. Casi todas las que parecían
-funcionar al principio cayeron en alguna de las trampas de esta lista.
+Nace de 97 experimentos sobre datos de cripto (futuros de Binance, 2020-2024),
+más un análisis de costos en ETF y futuros.
 
 ## Qué hay aquí
 
