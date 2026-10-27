@@ -1,8 +1,8 @@
 # Trampas de backtesting
 
 Lista de errores que hacen que un backtest se vea mejor de lo que es.
-Cada una se encontró en pruebas reales: más de 95 experimentos preinscritos sobre
-datos de cripto, acciones y materias primas. Ninguna estrategia pasó todos los
+Nace de 97 experimentos sobre datos de cripto (futuros de Binance, 2020-2024),
+más un análisis de costos en ETF y futuros. Ninguna estrategia pasó todos los
 controles, y casi todas las que "pasaban" al principio cayeron en alguna de estas.
 
 Cada trampa trae **qué pasa**, **cómo se ve** y **cómo se evita**.
