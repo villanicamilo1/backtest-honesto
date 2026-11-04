@@ -1,0 +1,48 @@
+================================================================================================
+  REJILLA COMPLETA DEL PORTON 111b · ventaja +-1 = 0,24 NETA (unidad AQR)
+  regla evaluada COMPRADO/FUERA · 10 bps · t>=2,51 · 2000 mundos por celda
+  tolerancia rho +-0.005  Sharpe +-0.005  ·  Sharpe ref medida 0.342
+  rho senal medida 0.2604  se por bloques de 24 meses 0.0404
+  rejilla de rho = medida +-2se = [0.18, 0.26, 0.341]
+================================================================================================
+
+    phi  rho obj     lam  rho logr   Sh+-1  rond    alfa  beta     t      SI    GRIS    NO  falsos  estado
+   0.85    0.180  0.0000    0.1934  0.2408    12                                      NO CALIBRABLE, excluida
+   0.85    0.260  0.2295    0.2599  0.2434     3   0.539  0.56  3.46   78.1%   21.6%  0.2%    0.0%  OK
+   0.85    0.341  0.5210    0.3397  0.2382     2   0.510  0.56  3.28   72.8%   27.0%  0.3%    0.0%  OK
+   0.90    0.180  0.0000    0.1809  0.2406     3   0.561  0.57  3.61   81.8%   18.1%  0.1%    0.0%  OK
+   0.90    0.260  0.2430    0.2584  0.2441     3   0.540  0.57  3.47   78.0%   21.7%  0.2%    0.0%  OK
+   0.90    0.341  0.5727    0.3392  0.2395     3   0.501  0.57  3.22   69.2%   30.1%  0.7%    0.0%  OK
+   0.95    0.180  0.0000    0.1839  0.2384     7   0.548  0.56  3.52   78.1%   21.7%  0.1%    0.0%  OK
+   0.95    0.260  0.2857    0.2579  0.2367     3   0.523  0.57  3.36   74.4%   25.2%  0.4%    0.0%  OK
+   0.95    0.341  0.6498    0.3378  0.2448     3   0.488  0.57  3.13   65.5%   33.5%  1.0%    0.0%  OK
+   0.98    0.180  0.0000    0.1930  0.2356    12                                      NO CALIBRABLE, excluida
+   0.98    0.260  0.3589    0.2551  0.2406     2   0.489  0.57  3.13   64.5%   34.4%  1.0%    0.0%  OK
+   0.98    0.341  0.7656    0.3337  0.2319    12                                      NO CALIBRABLE, excluida
+
+  celdas validas: 9/12
+
+  ESQUINA PEOR DE LA REJILLA: phi 0.98, rho senal 0.260
+  desglose  t 67.3% · mitades 88.2% · meseta 95.4% · r/c 95.3%
+
+  POTENCIA OFICIAL = 64.5 % +-1.1    falsos SI 0.0 %
+  porton 60 %  ->  PASA
+
+  ESTE NUMERO ES EL ULTIMO DEL PORTON. Si aparece otro error se corrige
+  con la misma regla simetrica (trampa 27) y queda escrito.
+  REINTENTO de la celda phi 0.98 rho 0.341
+  Sharpe ref objetivo 0.3418
+
+   ronda      lam      s_m  rho logr   Sh+-1  estado
+       1   0.2507  0.03653    0.2463  0.2423  
+       2   0.7326  0.03640    0.3401  0.2353  CONVERGIDO
+
+  EVALUACION, 2000 mundos
+    alfa 0.429  beta 0.57  t 2.74
+    SI 50.0%  GRIS 47.6%  NO 2.4%   falsos SI 0.2%
+    desglose  t 54.9% · mitades 77.7% · meseta 91.1% · r/c 93.4%
+
+    50.0 % +-1.1   porton 60 %  ->  NO PASA
+    CALIBRADA: entra en la decision
+
+[exited with code 0]

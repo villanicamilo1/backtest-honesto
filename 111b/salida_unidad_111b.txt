@@ -1,0 +1,22 @@
+==============================================================================
+  UNIDAD DE LA VENTAJA · esquina peor phi 0,85, rho senal 0,243
+==============================================================================
+
+1 · EL MUNDO DEL 57,5 %: calibrado con la regla COMPRADO/FUERA = 0,24
+    Sharpe por mercado comprado/FUERA   0.2421   <- a esto se calibro
+    Sharpe por mercado +-1 (unidad AQR) 0.1964   <- lo que AQR dice que es 0,24
+    el mundo tiene -18 % mas tendencia de la que dice la fuente
+
+2 · MUNDO CORREGIDO: se fija +-1 = 0,24 (la unidad de la fuente)
+    lam 0.1898  s_m 0.14773  rho senal lograda 0.2510 (obj 0.243)  CONVERGIDO
+    Sharpe +-1              0.2386  (fijada)
+    Sharpe comprado/fuera   0.2697  (resultado)
+
+3 · POTENCIA EN EL MUNDO CORREGIDO, 2000 mundos, 10 bps
+    regla                   alfa cart   beta      t      SI    GRIS     NO  falsos
+    comprado/FUERA (111b)       0.544   0.56   3.50   80.5%   19.4%   0.1%    0.1%
+                          desglose  t 81.0% · mitades 96.6% · meseta 99.8% · r/c 98.8%   (error +-0.9)
+    +-1 comprado/vendido        0.539   0.12   3.47   77.2%   22.6%   0.2%    0.1%
+                          desglose  t 80.2% · mitades 96.4% · meseta 99.8% · r/c 89.9%   (error +-0.9)
+
+[exited with code 0]
