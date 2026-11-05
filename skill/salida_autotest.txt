@@ -1,0 +1,90 @@
+==========================================================================
+  AUTOTEST sobreajuste.py
+==========================================================================
+
+1. SHARPE Y PSR
+  [BIEN] sharpe = media/sd(ddof=1)
+  [BIEN] sharpe con sd=0 devuelve 0
+  [BIEN] sharpe NO anualizada (escala con sqrt(n) solo si se anualiza)   sharpe(r)=0.4233  sharpe(rr)=0.4381
+  [BIEN] psr(sr_ref = sr propia) = 0,50
+  [BIEN] psr crece con T
+  [BIEN] psr contra la formula a mano
+  [BIEN] asimetria negativa BAJA el psr a igual sharpe   psr(simetrico)=0.1138  psr(cola izq)=0.0001  sr -0.0603 vs -0.1535
+
+2. SR MAXIMO ESPERADO BAJO LA NULA
+  [BIEN] N=1 -> 0
+  [BIEN] crece con N
+  [BIEN] escala con sqrt(varianza)
+  [BIEN] aproximacion vs Monte Carlo  N=10   formula 0.3149  MC 0.3072  dif +2.5 %
+  [BIEN] aproximacion vs Monte Carlo  N=100   formula 0.5061  MC 0.5015  dif +0.9 %
+  [BIEN] aproximacion vs Monte Carlo  N=1000   formula 0.6510  MC 0.6482  dif +0.4 %
+
+3. DSR · MUNDO SIN VENTAJA (100 configuraciones) vs VENTAJA PLANTADA
+   sin ventaja: mejor de 100 -> sr 0.0863  umbral 0.0814  psr(0) 0.9966  DSR 0.5614
+  [BIEN] sin ventaja: DSR < 0,95   DSR=0.5614
+  [BIEN] sin ventaja: psr ingenua ENGANA (psr0 alta y DSR baja)   psr0=0.9966 vs DSR=0.5614
+  [BIEN] fuente_var declarada como medida   medida de los ensayos
+   con ventaja: mejor de 100 -> config 7 (plantada 7)  sr 0.3258  umbral 0.1150  DSR 1.0000
+  [BIEN] con ventaja: elige la plantada
+  [BIEN] con ventaja: DSR alto (> 0,95)   DSR=1.0000
+  [BIEN] falsos SI del DSR al corte 0,95 <= 5 % (una cola)   0.00 % de 400
+   el corte 0,95 NO es un tamano de 5 %: medido 0.00 %. Es muy
+   conservador porque el ancho del PSR (1/sqrt(T-1)) es mucho mayor que
+   la dispersion del maximo de N. 'DSR 0,60' NO significa '40 % de que
+   sea sobreajuste'.
+   POTENCIA del corte 0,95 (ventaja plantada en 1 de 100 configuraciones):
+     sr plantada 0.05 (anual x sqrt(252) =  0.8)   DSR>0,95 en   0.8 %   elige la plantada  15.8 %
+     sr plantada 0.10 (anual x sqrt(252) =  1.6)   DSR>0,95 en   8.3 %   elige la plantada  68.3 %
+     sr plantada 0.15 (anual x sqrt(252) =  2.4)   DSR>0,95 en  61.7 %   elige la plantada  95.8 %
+     sr plantada 0.20 (anual x sqrt(252) =  3.2)   DSR>0,95 en  98.3 %   elige la plantada 100.0 %
+     sr plantada 0.25 (anual x sqrt(252) =  4.0)   DSR>0,95 en 100.0 %   elige la plantada 100.0 %
+     sr plantada 0.30 (anual x sqrt(252) =  4.8)   DSR>0,95 en 100.0 %   elige la plantada 100.0 %
+  [BIEN] potencia crece con la ventaja
+  [BIEN] cota teorica 1/(T-1) SOBREESTIMA el DSR   teorica 0.5779 >= medida 0.5614  (var 0.00100 vs 0.00103)
+  [BIEN] cota optimista declarada en fuente_var
+
+4. PBO · CSCV
+  [BIEN] S impar da error
+  [BIEN] T muy chico da error
+   sin ventaja: PBO 0.611  logit mediano -0.506  rango mediano 0.376  combinaciones 12,870
+  [BIEN] combinaciones = C(16,8) = 12.870
+   dispersion del PBO entre 24 matrices NULAS: media 0.503  desv 0.146  de 0.159 a 0.817
+  [BIEN] sin ventaja: E[PBO] = 0,5 (entre matrices, 3 EE)   0.503 +- 0.030
+  [BIEN] una sola matriz NO basta: la desv entre matrices > 0,10   desv 0.146 -> un PBO de 0,25 sin ventaja es normal
+   con ventaja: PBO 0.000  logit mediano +4.605  rango mediano 0.990
+  [BIEN] con ventaja: PBO bajo (< 0,10)   PBO=0.000
+  [BIEN] con ventaja: PBO mucho menor que sin ventaja
+  [BIEN] las sumas por bloque reproducen sharpe() exacto   dif max 6.94e-17
+  [BIEN] PBO invariante al orden de las configuraciones
+  [BIEN] configs identicas: PBO = 0 (empate -> rango alto). DEGENERACION, no exito   PBO=0.000  rango mediano 0.952
+
+5. CUSUM DE DEGRADACION
+  [BIEN] en vivo = backtest: no dispara
+  [BIEN] caida de 1 sigma: alarma en el paso 10 (exacto)   alarma=10  S[9]=5  S[10]=5.50
+  [BIEN] invariante a la escala (factor 4, exacto en binario)
+  [BIEN] umbral interior (h=4,75) -> alarma en 9   alarma=9
+  [BIEN] el EMPATE en h es ambiguo y queda documentado, no corregido a mano   alarma=9 (el exacto da 10)
+  [BIEN] mejora NO dispara (es de una cola)
+  [BIEN] vectorizada == bucle (segunda implementacion)   discrepancias 0
+   ARL medido (delta=1,0  h=5,0  k=0,5):
+     bajo la NULA (sin degradacion)     ARL    927.2   disparan 100.0 %  (de 6000 pasos)
+  [BIEN] ARL0 > 300 (no es una alarma histerica)   ARL0=927
+     con caida de 0,5 sigma             ARL     36.5   disparan 100.0 %  (de 2000 pasos)
+     con caida de 1,0 sigma             ARL     10.5   disparan 100.0 %  (de 500 pasos)
+  [BIEN] ARL1 < 25 con caida de 1 sigma   ARL1=10.5
+
+6. DSR A LAS DIMENSIONES DEL PROTOCOLO B (9 ensayos, 1.063 sesiones)
+   sigma 16.8 bps · umbral+MDE_B del porton = 2,59 bps (sharpe por operacion 0.154)
+  [BIEN] protocolo B: falsos SI del DSR <= 5 %   0.00 %
+     efecto 1.00 bps (sharpe/op 0.060)   DSR>0,95 en   2.2 %
+     efecto 2.00 bps (sharpe/op 0.119)   DSR>0,95 en  37.0 %
+     efecto 2.59 bps (sharpe/op 0.154)   DSR>0,95 en  79.8 %
+     efecto 3.00 bps (sharpe/op 0.179)   DSR>0,95 en  91.8 %
+     efecto 4.00 bps (sharpe/op 0.238)   DSR>0,95 en 100.0 %
+   -> con 9 ensayos (no 100) el DSR SI alcanza al porton: un ganador que
+      pase umbral+MDE_B queda por encima del corte 0,95 la mayoria de las
+      veces. Con 100 configuraciones no alcanzaria. El DSR depende de N.
+
+==========================================================================
+  MAL = 0
+==========================================================================
