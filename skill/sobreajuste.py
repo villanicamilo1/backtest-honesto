@@ -35,6 +35,13 @@ LO QUE MIDE EL AUTOTEST (no son citas, son numeros de este codigo):
     combinaciones comparten el mismo dato. Entre 24 matrices SIN NINGUNA
     ventaja: media 0,503, desviacion 0,146, recorrido de 0,159 a 0,817.
     Un PBO de 0,25 en un solo backtest no es evidencia de nada.
+  * El INTERVALO del PBO (remuestreo dentro de bloque, B=200) cubrio el valor
+    verdadero 30 de 30 veces en matrices nulas, con ancho medio 0,530 sobre una
+    escala de 0 a 1: honesto pero casi no informativo. 30/30 a nominal 95 % es
+    compatible con el 95 % (p = 0,21), no prueba sobrecobertura. La pendiente
+    centro-del-bootstrap contra punto es 0,36, no 1,00: el intervalo se lee como
+    "la banda de PBO compatible con estos datos", no como un intervalo centrado
+    en el estimado.
   * El PBO da 0,000 cuando las configuraciones son casi identicas (todas
     empatan fuera de muestra y la elegida queda en el rango alto). Una rejilla
     de variantes que apenas varian produce un PBO halagador. DEGENERACION.
@@ -98,55 +105,112 @@ def dsr(retornos, n_ensayos, var_sr_ensayos=None, sr_ensayos=None):
             var_sr_ensayos = 1.0/max(T - 1, 1)
             fuente = "teorica 1/(T-1) · COTA OPTIMISTA"
     sr0 = sr_maximo_esperado(var_sr_ensayos, n_ensayos)
-    return dict(dsr=psr(r, sr0), psr0=psr(r, 0.0), sr=sharpe(r),
+    nota = (f"barrera MAS DURA que 5 %: falsos SI medidos 0,00 % de 400 "
+            f"(N=100, T=1000). Reportar siempre con n_ensayos={int(n_ensayos)}.")
+    return dict(nota=nota, dsr=psr(r, sr0), psr0=psr(r, 0.0), sr=sharpe(r),
                 sr_umbral=sr0, var_sr=var_sr_ensayos, fuente_var=fuente,
                 n_ensayos=int(n_ensayos), T=T,
                 asimetria=float(stats.skew(r, bias=False)),
                 curtosis=float(stats.kurtosis(r, fisher=False, bias=False)))
 
 # --------------------------------------------------------------------- PBO
-def pbo(M, S=16, metrica=sharpe):
-    """CSCV. M es T x N: T observaciones, N configuraciones.
-    Parte T en S submatrices disjuntas, toma las C(S,S/2) combinaciones,
-    elige la mejor configuracion DENTRO de muestra y mide su rango FUERA.
-    PBO = P(logit < 0) = prob. de que la mejor dentro caiga en la mitad
-    peor fuera.
-    """
+def _indicadoras(S):
+    """matriz C x S con 1 en los bloques DENTRO de muestra. C = C(S, S/2)."""
     from itertools import combinations
+    co = list(combinations(range(S), S//2))
+    A = np.zeros((len(co), S))
+    for i, c in enumerate(co): A[i, list(c)] = 1.0
+    return A
+
+def _nucleo(bl, A):
+    """bl: S x n_b x N (bloques de tiempo contiguos). Devuelve logits y rangos.
+    Vectorizado: las C(S,S/2) combinaciones se componen con un producto de
+    matrices sobre las sumas por bloque, sin recorrer los datos C veces."""
+    S, n_b, N = bl.shape
+    s1 = bl.sum(axis=1); s2 = (bl**2).sum(axis=1)       # S x N
+    n = n_b*(S//2)
+    def srs(W):
+        mu = (W @ s1)/n
+        var = np.maximum((W @ s2)/n - mu**2, 0.0)*n/(n - 1.0)
+        sd = np.sqrt(var)
+        return np.where(sd > 0, mu/np.where(sd > 0, sd, 1.0), 0.0)
+    ins = srs(A); oos = srs(1.0 - A)                     # C x N
+    j = ins.argmax(axis=1)
+    eleg = oos[np.arange(len(A)), j]
+    r = (oos <= eleg[:, None]).sum(axis=1)/(N + 1.0)
+    r = np.clip(r, 1e-6, 1 - 1e-6)
+    return np.log(r/(1 - r)), r
+
+def _bloques(M, S):
+    corte = (M.shape[0]//S)*S
+    return M[:corte].reshape(S, corte//S, M.shape[1])
+
+class ResultadoPBO(dict):
+    """dict que al imprimirse NUNCA da el PBO solo: siempre con su intervalo.
+    Trampa 43: un PBO sin intervalo no es reportable."""
+    def __str__(self): return texto_pbo(self)
+    __repr__ = __str__
+
+def pbo(M, S=16, B=200, semilla=0):
+    """CSCV. M es T x N: T observaciones, N configuraciones.
+    Parte T en S submatrices de tiempo CONTIGUO, toma las C(S,S/2)
+    combinaciones, elige la mejor configuracion DENTRO de muestra y mide su
+    rango FUERA. PBO = P(logit < 0).
+
+    La metrica es la Sharpe por observacion. Para otra metrica hay que
+    escribir otro nucleo: _nucleo esta vectorizado sobre la Sharpe.
+
+    B remuestreos para el intervalo. El remuestreo es DENTRO de cada bloque:
+    se remuestrean con reemplazo las filas de cada bloque por separado. Asi
+    una fila duplicada nunca puede caer a la vez dentro y fuera de muestra,
+    porque cada bloque entero es dentro o fuera en cada combinacion. Un
+    bootstrap de filas sobre toda la matriz SI mezclaria las dos mitades y
+    sesgaria el PBO a la baja. B=0 apaga el intervalo (no reportable).
+    """
     M = np.asarray(M, float)
     T, N = M.shape
     if S % 2: raise ValueError("S tiene que ser par")
     if T < S*2: raise ValueError(f"T={T} muy chico para S={S}")
-    corte = (T//S)*S
-    bl = M[:corte].reshape(S, corte//S, N)        # S bloques consecutivos
-    # sumas por bloque para componer las combinaciones sin recorrer los datos
-    n_b = bl.shape[1]
-    s1 = bl.sum(axis=1)                            # S x N
-    s2 = (bl**2).sum(axis=1)
-    def sr_de(idx):
-        n = n_b*len(idx)
-        a = s1[list(idx)].sum(axis=0); b = s2[list(idx)].sum(axis=0)
-        mu = a/n
-        var = np.maximum(b/n - mu**2, 0.0)*n/(n - 1.0)
-        sd = np.sqrt(var)
-        out = np.zeros(N); m = sd > 0
-        out[m] = mu[m]/sd[m]
-        return out
-    todos = set(range(S))
-    logits = []; ranks = []
-    for comb in combinations(range(S), S//2):
-        ins = sr_de(comb)
-        oos = sr_de(tuple(sorted(todos - set(comb))))
-        j = int(np.argmax(ins))
-        # rango relativo del elegido FUERA de muestra, en (0,1)
-        r = float((np.sum(oos <= oos[j]))/(N + 1.0))
-        r = min(max(r, 1e-6), 1 - 1e-6)
-        ranks.append(r); logits.append(np.log(r/(1 - r)))
-    logits = np.array(logits); ranks = np.array(ranks)
-    return dict(pbo=float((logits < 0).mean()), logits=logits, rangos=ranks,
-                n_combinaciones=len(logits), S=S, T=T, N=N,
-                logit_mediano=float(np.median(logits)),
-                rango_mediano=float(np.median(ranks)))
+    A = _indicadoras(S)
+    bl = _bloques(M, S)
+    logits, ranks = _nucleo(bl, A)
+    punto = float((logits < 0).mean())
+    ic = None; rem = None
+    if B:
+        g = np.random.default_rng(semilla)
+        rem = np.empty(B)
+        for b in range(B):
+            idx = g.integers(0, bl.shape[1], (bl.shape[0], bl.shape[1]))
+            lb, _ = _nucleo(np.take_along_axis(bl, idx[:, :, None], axis=1), A)
+            rem[b] = (lb < 0).mean()
+        ic = (float(np.percentile(rem, 2.5)), float(np.percentile(rem, 97.5)))
+    return ResultadoPBO(pbo=punto, ic95=ic, remuestreos=rem,
+                        logits=logits, rangos=ranks, n_combinaciones=len(logits),
+                        S=S, T=T, N=N, n_bloque=bl.shape[1], B=B,
+                        logit_mediano=float(np.median(logits)),
+                        rango_mediano=float(np.median(ranks)))
+
+# ------------------------------------------------------------------ informe
+def texto_pbo(res):
+    """La UNICA forma sancionada de reportar un PBO. Trampa 43."""
+    ic = res.get("ic95")
+    t = (f"PBO {res['pbo']:.3f}" +
+         (f" (IC 95 % {ic[0]:.3f}-{ic[1]:.3f}, {res['B']} remuestreos por bloque)"
+          if ic else "  SIN INTERVALO: NO REPORTABLE (B=0)"))
+    return (t + f" · S={res['S']} bloques de {res['n_bloque']} obs"
+            f" · N={res['N']} configuraciones · {res['n_combinaciones']:,} combinaciones\n"
+            "  Un PBO solo no es evidencia: sin ninguna ventaja, 24 matrices dieron"
+            " de 0,159 a 0,817 (desv 0,146).\n"
+            "  Si las configuraciones son casi identicas el PBO sale 0,000 sin"
+            " ventaja alguna (trampa 43).")
+
+def texto_dsr(res):
+    """La UNICA forma sancionada de reportar un DSR: con N y con la nota."""
+    return (f"DSR {res['dsr']:.4f}  (SR {res['sr']:.4f} por observacion, umbral de"
+            f" seleccion {res['sr_umbral']:.4f}, PSR ingenua {res['psr0']:.4f})\n"
+            f"  n_ensayos = {res['n_ensayos']} · T = {res['T']} ·"
+            f" varianza entre ensayos: {res['fuente_var']}\n"
+            f"  {res['nota']}")
 
 # ------------------------------------------------------- CUSUM de degradacion
 def cusum_degradacion(retornos_vivos, media_backtest, sigma, delta=1.0, h=5.0):

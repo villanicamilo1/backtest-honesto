@@ -55,6 +55,18 @@
   [BIEN] con ventaja: PBO bajo (< 0,10)   PBO=0.000
   [BIEN] con ventaja: PBO mucho menor que sin ventaja
   [BIEN] las sumas por bloque reproducen sharpe() exacto   dif max 6.94e-17
+  [BIEN] nucleo vectorizado == bucle anterior (segunda implementacion)   dif max 0.00e+00
+   intervalo de p0: IC95 0.321-0.784  desv del bootstrap 0.131  vs desv entre matrices 0.146  razon 0.90
+  [BIEN] el bootstrap no se inventa precision (desv > 0,03)   0.131
+  [BIEN] el bootstrap NO reemplaza la dispersion entre matrices (la subestima)   bootstrap 0.131 < entre matrices 0.146
+   cobertura del IC95 sobre el verdadero 0,500: 100 % (12/12)  ancho medio 0.516  pendiente centro~punto 0.34
+  [BIEN] el IC95 cubre el valor verdadero >= 90 % de las veces   100 % de 12
+  [BIEN] el centro del bootstrap ENCOGE hacia 0,5 (pendiente entre 0 y 1)   pendiente 0.34 (1,00 seria sin encogimiento)
+   -> el IC es ancho a proposito: con 0,53 de ancho sobre una escala de 0 a 1,
+      un PBO de un solo backtest casi no informa. Eso es el dato, no un defecto.
+  [BIEN] str(resultado) trae el intervalo, nunca el numero solo
+  [BIEN] B=0 se marca NO REPORTABLE
+  [BIEN] texto_dsr trae n_ensayos y la nota de barrera
   [BIEN] PBO invariante al orden de las configuraciones
   [BIEN] configs identicas: PBO = 0 (empate -> rango alto). DEGENERACION, no exito   PBO=0.000  rango mediano 0.952
 

@@ -144,3 +144,36 @@ El margen es el mínimo. El límite real es tu capital frente al tamaño mínimo
 
 **28. Un SÍ es débil y un NO es fuerte.**
 Encontrar un error es un hecho. No encontrar errores no garantiza que la estrategia gane en el futuro.
+
+---
+
+## H. Medidas de sobreajuste
+
+**29. Variantes casi idénticas: el PBO sale 0 sin ninguna ventaja.**
+*(= trampa 43 en la numeración de la bitácora de Titanio)*
+
+El PBO por CSCV mide el rango FUERA de muestra de la configuración que fue mejor
+DENTRO. Si todas las configuraciones son casi la misma, sus resultados fuera de
+muestra empatan: la elegida queda por encima de casi todas por el desempate, su
+rango relativo sale alto y el logit positivo. El PBO da 0,000, que se lee como
+"sin sobreajuste", cuando lo que hubo fue falta de variedad.
+
+Cómo se ve: PBO ≈ 0 con rango mediano ≈ 1. Medido con 20 copias de la misma
+serie: PBO 0,000 y rango mediano 0,952, sin ninguna ventaja.
+
+→ Reportar el PBO siempre con el número de configuraciones y el rango mediano.
+  Un rango mediano cerca de 1 junto a un PBO de 0 es la huella de la
+  degeneración, no de robustez.
+→ Un PBO nunca se reporta solo: va con su intervalo. Sin ninguna ventaja,
+  24 matrices independientes dieron PBO de 0,159 a 0,817 (desviación 0,146).
+  Un PBO de 0,25 en un solo backtest no es evidencia de nada.
+→ Hay una tensión real con la trampa 13: limitar el número de variantes sube el
+  listón estadístico y al mismo tiempo rompe el PBO como medida. No se pueden
+  optimizar las dos con la misma rejilla. Hay que decidir cuál se está midiendo.
+
+**Nota sobre el DSR.** El corte DSR > 0,95 no es una prueba de tamaño 5 %: es
+mucho más duro. Falsos SÍ medidos 0,00 % de 400 con 100 configuraciones y
+T = 1000. Y su potencia depende de N: con 100 configuraciones está ciego por
+debajo de una Sharpe por observación de 0,10; con 9 configuraciones alcanza a un
+efecto del tamaño del umbral de costos. Un DSR sin el número de ensayos no dice
+nada, y "DSR 0,60" NO significa "40 % de probabilidad de sobreajuste".

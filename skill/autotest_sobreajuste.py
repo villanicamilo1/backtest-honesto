@@ -8,7 +8,8 @@ import numpy as np
 from itertools import combinations
 from scipy import stats
 from sobreajuste import (sharpe, psr, sr_maximo_esperado, dsr, pbo,
-                         cusum_degradacion, GAMMA)
+                         cusum_degradacion, GAMMA, texto_pbo, texto_dsr,
+                         _nucleo, _indicadoras, _bloques)
 
 MAL = 0
 def chk(nombre, ok, detalle=""):
@@ -125,10 +126,10 @@ chk("cota optimista declarada en fuente_var", "OPTIMISTA" in dopt['fuente_var'])
 
 # ------------------------------------------------------------------ 4. PBO
 print("\n4. PBO · CSCV")
-try: pbo(M0, S=15); ok = False
+try: pbo(M0, S=15, B=0); ok = False
 except ValueError: ok = True
 chk("S impar da error", ok)
-try: pbo(M0[:20], S=16); ok = False
+try: pbo(M0[:20], S=16, B=0); ok = False
 except ValueError: ok = True
 chk("T muy chico da error", ok)
 
@@ -140,7 +141,7 @@ chk("combinaciones = C(16,8) = 12.870", p0['n_combinaciones'] == 12870)
 # misma matriz. El PBO de UNA matriz tiene error de muestreo grande. Se prueba
 # la ESPERANZA entre matrices, y se MIDE la dispersion de una sola.
 R = 24; g2 = np.random.default_rng(516)
-vs = np.array([pbo(g2.normal(0, 0.01, (T, N)), S=16)['pbo'] for _ in range(R)])
+vs = np.array([pbo(g2.normal(0, 0.01, (T, N)), S=16, B=0)['pbo'] for _ in range(R)])
 ee = vs.std(ddof=1)/np.sqrt(R)
 print(f"   dispersion del PBO entre {R} matrices NULAS: media {vs.mean():.3f}"
       f"  desv {vs.std(ddof=1):.3f}  de {vs.min():.3f} a {vs.max():.3f}")
@@ -150,7 +151,7 @@ chk("una sola matriz NO basta: la desv entre matrices > 0,10",
     vs.std(ddof=1) > 0.10,
     f"desv {vs.std(ddof=1):.3f} -> un PBO de 0,25 sin ventaja es normal")
 
-p1 = pbo(M1, S=16)
+p1 = pbo(M1, S=16, B=0)
 print(f"   con ventaja: PBO {p1['pbo']:.3f}  logit mediano {p1['logit_mediano']:+.3f}  "
       f"rango mediano {p1['rango_mediano']:.3f}")
 chk("con ventaja: PBO bajo (< 0,10)", p1['pbo'] < 0.10, f"PBO={p1['pbo']:.3f}")
@@ -172,13 +173,76 @@ chk("las sumas por bloque reproducen sharpe() exacto",
     np.max(np.abs(porbloques - directo)) < 1e-9,
     f"dif max {np.max(np.abs(porbloques - directo)):.2e}")
 
+# el nucleo vectorizado contra la implementacion de BUCLE anterior.
+def pbo_bucle(M, S):
+    from itertools import combinations
+    T2, N2 = M.shape; corte = (T2//S)*S
+    b = M[:corte].reshape(S, corte//S, N2); n_b = b.shape[1]
+    q1 = b.sum(axis=1); q2 = (b**2).sum(axis=1)
+    def sr_de(idx):
+        n = n_b*len(idx)
+        mu = q1[list(idx)].sum(axis=0)/n
+        var = np.maximum(q2[list(idx)].sum(axis=0)/n - mu**2, 0.0)*n/(n - 1.0)
+        sd = np.sqrt(var); o = np.zeros(N2); m = sd > 0; o[m] = mu[m]/sd[m]; return o
+    todos = set(range(S)); lg = []
+    for comb in combinations(range(S), S//2):
+        ins = sr_de(comb); oos = sr_de(tuple(sorted(todos - set(comb))))
+        j = int(np.argmax(ins))
+        rr = float(np.sum(oos <= oos[j])/(N2 + 1.0)); rr = min(max(rr, 1e-6), 1 - 1e-6)
+        lg.append(np.log(rr/(1 - rr)))
+    return np.array(lg)
+lv, _ = _nucleo(_bloques(M0, 16), _indicadoras(16))
+lb = pbo_bucle(M0, 16)
+chk("nucleo vectorizado == bucle anterior (segunda implementacion)",
+    np.max(np.abs(lv - lb)) < 1e-9, f"dif max {np.max(np.abs(lv - lb)):.2e}")
+
+# el INTERVALO: remuestreo DENTRO de cada bloque. Se compara su anchura contra
+# la dispersion REAL entre matrices, que es la vara.
+sdb = p0['remuestreos'].std(ddof=1)
+print(f"   intervalo de p0: IC95 {p0['ic95'][0]:.3f}-{p0['ic95'][1]:.3f}"
+      f"  desv del bootstrap {sdb:.3f}  vs desv entre matrices {vs.std(ddof=1):.3f}"
+      f"  razon {sdb/vs.std(ddof=1):.2f}")
+chk("el bootstrap no se inventa precision (desv > 0,03)", sdb > 0.03, f"{sdb:.3f}")
+chk("el bootstrap NO reemplaza la dispersion entre matrices (la subestima)",
+    sdb < vs.std(ddof=1), f"bootstrap {sdb:.3f} < entre matrices {vs.std(ddof=1):.3f}")
+# Lo unico que un intervalo DEBE cumplir es cubrir. Se mide, no se supone.
+# (El criterio anterior, "la media del bootstrap a menos de 0,05 del punto",
+#  era una propiedad que yo inventé: el remuestreo dentro de bloque encoge
+#  hacia 0,5 a proposito, porque parte de lo que empuja el punto fuera de 0,5
+#  es el patron temporal que el remuestreo deshace. Encoger no es un error si
+#  el intervalo cubre; lo que hay que medir es la cobertura.)
+Rc, Bc = 12, 100
+gc = np.random.default_rng(4242); cub = 0; anc = []; enc = []
+for _ in range(Rc):
+    rc = pbo(gc.normal(0, 0.01, (T, N)), S=16, B=Bc)
+    lo, hi = rc['ic95']; anc.append(hi - lo)
+    enc.append((rc['pbo'], rc['remuestreos'].mean()))
+    cub += (lo <= 0.5 <= hi)
+enc = np.array(enc)
+pend = float(np.polyfit(enc[:, 0], enc[:, 1], 1)[0])
+print(f"   cobertura del IC95 sobre el verdadero 0,500: {100*cub/Rc:.0f} % ({cub}/{Rc})"
+      f"  ancho medio {np.mean(anc):.3f}  pendiente centro~punto {pend:.2f}")
+chk("el IC95 cubre el valor verdadero >= 90 % de las veces",
+    cub/Rc >= 0.90, f"{100*cub/Rc:.0f} % de {Rc}")
+chk("el centro del bootstrap ENCOGE hacia 0,5 (pendiente entre 0 y 1)",
+    0.0 < pend < 1.0, f"pendiente {pend:.2f} (1,00 seria sin encogimiento)")
+print( "   -> el IC es ancho a proposito: con 0,53 de ancho sobre una escala de 0 a 1,")
+print( "      un PBO de un solo backtest casi no informa. Eso es el dato, no un defecto.")
+
+# reporte obligatorio
+chk("str(resultado) trae el intervalo, nunca el numero solo",
+    "IC 95" in str(p0) and "0.146" in str(p0).replace(",", "."))
+chk("B=0 se marca NO REPORTABLE", "NO REPORTABLE" in texto_pbo(pbo(M0, S=16, B=0)))
+chk("texto_dsr trae n_ensayos y la nota de barrera",
+    "n_ensayos = 100" in texto_dsr(d0) and "MAS DURA que 5 %" in texto_dsr(d0))
+
 # invariancia: permutar las COLUMNAS no puede cambiar el PBO
 perm = np.random.default_rng(5).permutation(N)
 chk("PBO invariante al orden de las configuraciones",
-    abs(pbo(M0[:, perm], S=16)['pbo'] - p0['pbo']) < 1e-12)
+    abs(pbo(M0[:, perm], S=16, B=0)['pbo'] - p0['pbo']) < 1e-12)
 
 # degeneracion conocida: configuraciones IDENTICAS
-pid = pbo(np.tile(M0[:, [0]], (1, 20)), S=16)
+pid = pbo(np.tile(M0[:, [0]], (1, 20)), S=16, B=0)
 chk("configs identicas: PBO = 0 (empate -> rango alto). DEGENERACION, no exito",
     pid['pbo'] == 0.0, f"PBO={pid['pbo']:.3f}  rango mediano {pid['rango_mediano']:.3f}")
 
