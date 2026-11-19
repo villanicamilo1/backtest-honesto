@@ -1,3 +1,4 @@
 dia,fecha,escrito_utc,razon
 20756,2026-10-30,2026-10-30 00:14:27,"no bajo dato de las 12 monedas a la vez: la red no estaba lista al despertar el PC (arreglado: sonda de red y reintentos cada 60 s hasta las 00:55 UTC)"
 20757,2026-10-31,2026-10-31 23:53:10,"la tarea no escribio pronostico: fue rechazada por condicion de energia (LastTaskResult 0x800710E0, StopIfGoingOnBatteries) y no habia WakeToRun. Arreglado en los ajustes de la tarea"
+20776,2026-11-19,2026-11-19 18:29:54,son las 18:29 UTC y el tope es la 01:00 UTC. El dia que habria que pronosticar lleva 18h29 corridos: ya no es un pronostico
