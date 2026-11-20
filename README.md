@@ -131,3 +131,7 @@ Su código completo está en un repositorio aparte (`titanium_v2`).
 
 Revisión técnica de datos pasados. No es asesoría de inversión ni garantía de
 resultados. Operar con apalancamiento puede hacerte perder más de lo que pusiste.
+
+
+## Licencia y datos
+El código fuente y la documentación original de este proyecto se ofrecen bajo la licencia MIT (ver `LICENSE`). La licencia no cubre datos de terceros. La fuente y los términos de reutilización de `111b/panel_111b.csv` aún no están verificados; no se afirma que ese archivo pueda redistribuirse o relicenciarse.
