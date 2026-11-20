@@ -20,7 +20,6 @@ direccion.
   no entra en la decision.
 """
 import sys, numpy as np
-sys.path.insert(0,"/tmp/claude-0/-home-claude/ed80f7a1-0a09-5942-8460-efa74b38a33a/scratchpad/p111b")
 import tendencia_111b as M
 
 TOL_RHO = 0.005

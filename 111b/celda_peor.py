@@ -4,7 +4,6 @@ imposible. Es la esquina que seria la PEOR, asi que excluirla por una
 tolerancia seria la tolerancia favoreciendo a la estrategia.
 Se reintenta con mas mundos de calibracion y mas rondas."""
 import sys, numpy as np
-sys.path.insert(0,"/tmp/claude-0/-home-claude/ed80f7a1-0a09-5942-8460-efa74b38a33a/scratchpad/p111b")
 import tendencia_111b as M
 import rejilla_111b as R
 PHI, RHO = 0.98, 0.341

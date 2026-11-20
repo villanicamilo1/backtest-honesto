@@ -4,7 +4,6 @@ Lo que use fue un error estandar de Fisher con n = 539 meses. Pero la senal
 12-1 se SOLAPA 11 de 12 meses, asi que 539 meses NO son 539 observaciones
 independientes. Se mide con bloques anuales sobre el dato real (solo precios)."""
 import sys, numpy as np
-sys.path.insert(0,"/tmp/claude-0/-home-claude/ed80f7a1-0a09-5942-8460-efa74b38a33a/scratchpad/p111b")
 import tendencia_111b as M
 ym,X,TB = M.solo_desarrollo(*M.leer_panel("panel_111b.csv"))
 r,sig,C = M.momentos(ym,X,TB)

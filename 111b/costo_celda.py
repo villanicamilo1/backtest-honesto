@@ -2,7 +2,6 @@
 """Punto 1: medir la CELDA OFICIAL (phi 0,98 · rho 0,341) a 0, 10 y 20 bps.
 Mismo mundo, distinto costo cobrado. El 10 es el que decide (fijado antes)."""
 import sys, numpy as np
-sys.path.insert(0,"/tmp/claude-0/-home-claude/ed80f7a1-0a09-5942-8460-efa74b38a33a/scratchpad/p111b")
 import tendencia_111b as M   # NO importar rejilla_111b: se ejecuta al importarse
 PHI, RHO = 0.98, 0.341
 LAM, S_M = 0.7326, 0.03640          # calibrados en celda_peor.py, convergidos
